@@ -1,5 +1,6 @@
 import os
 from flask import Flask, request, abort, jsonify
+from flask_cors import CORS  # ✅ ต้องติดตั้งเพิ่ม: pip install flask-cors
 from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
@@ -10,8 +11,9 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 
 app = Flask(__name__)
+CORS(app)  # ✅ อนุญาตให้หน้าเว็บจาก GitHub ส่งข้อมูลมาที่ Render ได้
 
-# --- ข้อมูลการเชื่อมต่อ ---
+# --- ข้อมูลการเชื่อมต่อ (Eileen เช็ค Token ให้ตรงกับตัวเทสนะคะ) ---
 line_bot_api = LineBotApi('+JCnVr0NgGYIA4yIIgT5luYdcF+yOLXwm+g7RA43Xo0oOjbNTna3I77Wf+hDese6hiOj65w+tFTdexB2zUIcZ/5PJmHtZsLckuaVKGpPmycShP3KzBjtT09/GUNTdp4kX0lTc5sifwwmkAdgBAQ7vgdB04t89/1O/w1cDnyilFU=')
 handler = WebhookHandler('41f95879f96925fe1179edff0f5db73f')
 
@@ -24,14 +26,13 @@ try:
 except Exception as e:
     print(f"Firebase Error: {e}")
 
-# --- คลังคำพูด ---
+# --- คลังคำพูด 5 ภาษาสำหรับระบบ Global ---
 msg_dict = {
-    'th': {
-        'welcome': "สวัสดีค่ะคุณ {name}! ยินดีต้อนรับสู่ My Savings Space",
-        'reg_btn': "🚀 เริ่มตั้งเป้าหมายการออม",
-        'confirm': "บันทึกยอด {amt} {curr} เรียบร้อยแล้วค่ะ! ✨",
-        'error_num': "กรุณาพิมพ์เป็นตัวเลขนะคะ"
-    }
+    'th': {'success': "ตั้งค่าเป้าหมาย '{goal}' เรียบร้อยแล้วค่ะ! มาเริ่มภารกิจกันเลย 🚀", 'error': "กรุณาพิมพ์เป็นตัวเลขนะคะ"},
+    'en': {'success': "Goal '{goal}' set successfully! Let's start the mission 🚀", 'error': "Please enter a number."},
+    'zh': {'success': "目标 '{goal}' 设置成功！让我们开始任务吧 🚀", 'error': "请输入数字。"},
+    'ja': {'success': "目標 '{goal}' が設定されました！ミッションを開始しましょう 🚀", 'error': "数字を入力してください。"},
+    'ko': {'success': "목표 '{goal}' 설정 완료! 미션을 시작합시다 🚀", 'error': "숫자를 입력해주세요."}
 }
 
 def send_greeting(reply_token, user_name):
@@ -48,7 +49,7 @@ def send_greeting(reply_token, user_name):
         "type": "box",
         "layout": "vertical",
         "contents": [
-          { "type": "text", "text": "My Savings Space 🧑‍🚀💰", "weight": "bold", "size": "xl", "color": "#2C3E50" },
+          { "type": "text", "text": "My Savings Space", "weight": "bold", "size": "xl", "color": "#2C3E50" },
           { "type": "text", "text": f"สวัสดีคุณ {user_name}! มาเริ่มต้นภารกิจเก็บเงินของคุณให้สำเร็จกันเถอะ", "wrap": True, "margin": "md", "color": "#555555", "size": "sm" }
         ]
       },
@@ -83,29 +84,55 @@ def handle_follow(event):
     profile = line_bot_api.get_profile(user_id)
     send_greeting(event.reply_token, profile.display_name)
 
+# ✅ แก้ไข API ลงทะเบียนให้บันทึกข้อมูลครบถ้วน และตอบโต้ตามภาษาที่เลือก
 @app.route("/api/register", methods=['POST'])
 def register_user():
-    data = request.json
-    user_id = data.get('userId')
-    db.collection('users').document(user_id).set(data, merge=True)
-    line_bot_api.push_message(user_id, TextSendMessage(text="ตั้งค่าเรียบร้อยแล้วค่ะ! 🚀"))
-    return jsonify({"status": "success"})
+    try:
+        data = request.json
+        user_id = data.get('userId')
+        goal_name = data.get('goalName')
+        lang = data.get('language', 'th')
+
+        # บันทึกข้อมูลลง Firebase (เก็บไว้ที่ document ของ User เลย)
+        db.collection('users').document(user_id).set(data, merge=True)
+        
+        # เลือกคำตอบกลับตามภาษาที่ผู้ใช้เลือกจากหน้าเว็บ
+        reply_msg = msg_dict.get(lang, msg_dict['th'])['success'].format(goal=goal_name)
+        
+        line_bot_api.push_message(user_id, TextSendMessage(text=reply_msg))
+        return jsonify({"status": "success"}), 200
+    except Exception as e:
+        print(f"Register Error: {e}")
+        return jsonify({"status": "error"}), 500
 
 @handler.add(MessageEvent, message=TextMessage)
 def handle_message(event):
     user_id = event.source.user_id
     msg_text = event.message.text.strip()
     
+    # ดึงข้อมูลผู้ใช้เพื่อดูว่าใช้สกุลเงินอะไร
+    user_doc = db.collection('users').document(user_id).get()
+    user_data = user_doc.to_dict() if user_doc.exists else {}
+    curr = user_data.get('currency', 'THB')
+    lang = user_data.get('language', 'th')
+
     try:
         amount = float(msg_text)
+        # บันทึกประวัติการออมแยกคอลเลกชัน
         db.collection('savings').add({
             'user_id': user_id,
             'amount': amount,
             'timestamp': firestore.SERVER_TIMESTAMP
         })
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=f"บันทึกยอด {amount} เรียบร้อย! ✨"))
+        
+        confirm_msg = f"บันทึกยอด {amount} {curr} เรียบร้อย! ✨"
+        if lang == 'en': confirm_msg = f"Saved {amount} {curr} successfully! ✨"
+        # (เพิ่มเงื่อนไขภาษาอื่นๆ ได้ตามคลังคำพูด)
+
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=confirm_msg))
     except:
-        line_bot_api.reply_message(event.reply_token, TextSendMessage(text="กรุณาพิมพ์ตัวเลขเพื่อออมเงินนะคะ"))
+        error_msg = msg_dict.get(lang, msg_dict['th'])['error']
+        line_bot_api.reply_message(event.reply_token, TextSendMessage(text=error_msg))
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
