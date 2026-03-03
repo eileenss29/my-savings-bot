@@ -197,3 +197,69 @@ def handle_message(event):
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
+
+from linebot.models import FollowEvent, FlexSendMessage
+
+# --- ฟังก์ชันส่ง Flex Message ทักทายเมื่อมีคนเพิ่มเพื่อน ---
+@handler.add(FollowEvent)
+def handle_follow(event):
+    user_id = event.source.user_id
+    
+    # Eileen อย่าลืมเปลี่ยนลิงก์ LIFF_URL เป็นของคุณนะครับ (เช่น https://liff.line.me/xxxx-xxxx)
+    LIFF_URL = "https://liff.line.me/YOUR_LIFF_ID"
+    
+    # สร้าง Flex Message สไตล์อวกาศ
+    welcome_flex = {
+      "type": "bubble",
+      "hero": {
+        "type": "image",
+        "url": "https://raw.githubusercontent.com/YOUR_GITHUB_USER/YOUR_REPO/main/%E0%B8%99%E0%B8%B1%E0%B8%81%E0%B8%AD%E0%B8%AD%E0%B8%A1%E0%B8%AD%E0%B8%A7%E0%B8%AC%E0%B8%B2%E0%B8%A8_tran.png",
+        "size": "full",
+        "aspectRatio": "20:13",
+        "aspectMode": "cover"
+      },
+      "body": {
+        "type": "box",
+        "layout": "vertical",
+        "contents": [
+          {
+            "type": "text",
+            "text": "My Savings Space 🧑‍🚀💰",
+            "weight": "bold",
+            "size": "xl",
+            "color": "#2C3E50"
+          },
+          {
+            "type": "text",
+            "text": "ยินดีต้อนรับสู่อวกาศแห่งการออม! มาเริ่มต้นสร้างภารกิจเก็บเงินของคุณให้สำเร็จกันเถอะ",
+            "wrap": True,
+            "margin": "md",
+            "color": "#555555",
+            "size": "sm"
+          }
+        ]
+      },
+      "footer": {
+        "type": "box",
+        "layout": "vertical",
+        "spacing": "sm",
+        "contents": [
+          {
+            "type": "button",
+            "style": "primary",
+            "height": "sm",
+            "color": "#FFB320",
+            "action": {
+              "type": "uri",
+              "label": "🚀 ลงทะเบียนเริ่มออม",
+              "uri": LIFF_URL
+            }
+          }
+        ]
+      }
+    }
+
+    line_bot_api.reply_message(
+        event.reply_token,
+        FlexSendMessage(alt_text="ยินดีต้อนรับสู่ My Savings Space", contents=welcome_flex)
+    )
