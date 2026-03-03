@@ -4,8 +4,7 @@ from linebot import LineBotApi, WebhookHandler
 from linebot.exceptions import InvalidSignatureError
 from linebot.models import (
     MessageEvent, TextMessage, TextSendMessage, 
-    ShowLoadingAnimationRequest, FlexSendMessage,
-    FollowEvent  # ✅ เพิ่มตัวดักจับการแอดเพื่อน
+    FlexSendMessage, FollowEvent
 )
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -21,6 +20,9 @@ cred = credentials.Certificate("serviceAccountKey.json")
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 db = firestore.client()
+
+# ✅ ตั้งค่า ADMIN_ID ของ Eileen ตรงนี้ครับ (รหัสที่ขึ้นต้นด้วย U...)
+ADMIN_ID = 'U_YOUR_ACTUAL_USER_ID_FROM_LOGS'
 
 # --- คลังคำพูด 5 ภาษา ---
 msg_dict = {
@@ -56,9 +58,7 @@ msg_dict = {
     }
 }
 
-# ✅ ฟังก์ชันสำหรับส่ง Greeting Flex Message (ตามที่คุณต้องการ)
 def send_greeting(event, user_name, lang_code):
-    # เลือกคำพูดตามภาษาเครื่อง
     welcome_text = msg_dict[lang_code]['welcome'].format(name=user_name)
     btn_text = msg_dict[lang_code]['reg_btn']
     
@@ -75,64 +75,25 @@ def send_greeting(event, user_name, lang_code):
         "type": "box",
         "layout": "vertical",
         "contents": [
-          {
-            "type": "text",
-            "text": f"สวัสดีคุณ {user_name}! 🧑‍🚀",
-            "weight": "bold",
-            "size": "xl",
-            "color": "#2C3E50"
-          },
-          {
-            "type": "text",
-            "text": "ยินดีต้อนรับสู่ My Savings Space พื้นที่ที่จะช่วยให้การออมเงิน 365 วันของคุณเป็นเรื่องสนุกและง่ายขึ้น!",
-            "wrap": True,
-            "margin": "md",
-            "color": "#7f8c8d",
-            "size": "sm"
-          },
-          {
-            "type": "box",
-            "layout": "vertical",
-            "margin": "xxl",
-            "spacing": "sm",
+          { "type": "text", "text": f"สวัสดีคุณ {user_name}! 🧑‍🚀", "weight": "bold", "size": "xl", "color": "#2C3E50" },
+          { "type": "text", "text": "ยินดีต้อนรับสู่ My Savings Space พื้นที่ที่จะช่วยให้การออมเงิน 365 วันของคุณเป็นเรื่องสนุกและง่ายขึ้น!", "wrap": True, "margin": "md", "color": "#7f8c8d", "size": "sm" },
+          { "type": "box", "layout": "vertical", "margin": "xxl", "spacing": "sm",
             "contents": [
-              {
-                "type": "button",
-                "style": "primary",
-                "color": "#FFB320",
-                "action": {
-                  "type": "uri",
-                  "label": btn_text,
-                  "uri": "https://liff.line.me/2009295672-lvQVM5Ey"
-                }
+              { "type": "button", "style": "primary", "color": "#FFB320",
+                "action": { "type": "uri", "label": btn_text, "uri": "https://liff.line.me/2009295672-lvQVM5Ey" }
               }
             ]
           }
         ]
       },
       "footer": {
-        "type": "box",
-        "layout": "vertical",
-        "contents": [
-          {
-            "type": "text",
-            "text": "มาสร้างวินัยการออมไปด้วยกันนะ",
-            "size": "xs",
-            "color": "#bdc3c7",
-            "align": "center"
-          }
-        ]
+        "type": "box", "layout": "vertical",
+        "contents": [ { "type": "text", "text": "มาสร้างวินัยการออมไปด้วยกันนะ", "size": "xs", "color": "#bdc3c7", "align": "center" } ]
       },
-      "styles": {
-        "body": { "backgroundColor": "#FFFFFF" },
-        "footer": { "separator": True }
-      }
+      "styles": { "body": { "backgroundColor": "#FFFFFF" }, "footer": { "separator": True } }
     }
     
-    line_bot_api.reply_message(
-        event.reply_token,
-        FlexSendMessage(alt_text="ยินดีต้อนรับสู่ My Savings Space", contents=flex_greeting)
-    )
+    line_bot_api.reply_message(event.reply_token, FlexSendMessage(alt_text="Welcome", contents=flex_greeting))
 
 @app.route("/callback", methods=['POST'])
 def callback():
@@ -144,14 +105,11 @@ def callback():
         abort(400)
     return 'OK'
 
-# --- ดักจับเหตุการณ์การแอดเพื่อน (Follow Event) ---
 @handler.add(FollowEvent)
 def handle_follow(event):
     user_id = event.source.user_id
     profile = line_bot_api.get_profile(user_id)
-    # เช็คภาษาเครื่องเบื้องต้น
     detected_lang = profile.language if profile.language in msg_dict else 'th'
-    # ส่งข้อความทักทายพร้อมปุ่มลงทะเบียนทันที
     send_greeting(event, profile.display_name, detected_lang)
 
 @app.route("/api/register", methods=['POST'])
@@ -183,7 +141,19 @@ def handle_message(event):
     user_id = event.source.user_id
     msg_text = event.message.text.strip()
 
-    line_bot_api.show_loading_animation(ShowLoadingAnimationRequest(chatId=user_id, loadingSeconds=3))
+    # พิมพ์ Log เพื่อให้ Eileen ก๊อปปี้ User ID ได้ง่ายๆ
+    print(f"DEBUG: Message from {user_id}: {msg_text}")
+
+    # ✅ ระบบ TEST สำหรับ Admin
+    if user_id == ADMIN_ID:
+        if msg_text == "test-greeting":
+            profile = line_bot_api.get_profile(user_id)
+            send_greeting(event, profile.display_name, "th")
+            return
+        elif msg_text == "test-confirm":
+            response = msg_dict['th']['confirm'].format(amt=100, curr="THB", goal="เป้าหมายทดสอบ")
+            line_bot_api.reply_message(event.reply_token, TextSendMessage(text=response))
+            return
 
     user_ref = db.collection('users').document(user_id)
     user_doc = user_ref.get()
@@ -209,6 +179,7 @@ def handle_message(event):
             goal_name = default_goal
             amount = float(msg_text)
 
+        # บันทึกโดยผูกกับ User ID เสมอ
         db.collection('savings').add({
             'user_id': user_id,
             'goal_name': goal_name,
