@@ -252,7 +252,7 @@ def handle_follow(event):
             "action": {
               "type": "uri",
               "label": "🚀 ลงทะเบียนเริ่มออม",
-              "uri": LIFF_URL
+              "uri": https://liff.line.me/2009295672-lvQVM5Ey
             }
           }
         ]
