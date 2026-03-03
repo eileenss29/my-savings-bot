@@ -189,7 +189,8 @@
             styleSelect.options[1].text = translations[l].styleFixed;
         }
 
-        liff.init({ liffId: "YOUR_LIFF_ID" }).then(() => {
+        // ✅ อัปเดต LIFF ID เรียบร้อยแล้ว
+        liff.init({ liffId: "2009295672-lvQVM5Ey" }).then(() => {
             if (!liff.isLoggedIn()) { liff.login(); }
         });
 
