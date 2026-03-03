@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Savings Space 🚀</title>
+    <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;500&display=swap');
+
+        body { 
+            font-family: 'Kanit', sans-serif; 
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #E0F2F1; 
+            background-image: 
+                radial-gradient(at 50% 0%, #ffffff 0px, transparent 70%),
+                radial-gradient(at 100% 100%, #B2E2E0 0px, transparent 60%),
+                url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3%3Cfilter id='noiseFilter'%3%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3%3C/filter%3%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3%3C/svg%3%");
+            background-blend-mode: soft-light;
+            background-size: cover;
+            overflow: hidden;
+        }
+
+        .container { 
+            background: rgba(255, 255, 255, 0.92); 
+            padding: 30px 25px; 
+            border-radius: 28px; 
+            box-shadow: 0 10px 30px rgba(151, 210, 208, 0.2); 
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            position: relative; 
+            z-index: 1;
+            backdrop-filter: blur(8px);
+        }
+
+        /* ✅ ปรับโลโก้ให้ติด Title มากขึ้นโดยลด margin-bottom */
+        .app-logo {
+            width: 160px; 
+            height: auto;
+            margin-bottom: 5px; /* ลดจาก 10px เหลือ 5px ให้ติด Title */
+            filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
+        }
+
+        /* ✅ ปรับระยะห่าง Title ให้ติดรูปมากขึ้น */
+        h2 { 
+            color: #2C3E50; 
+            margin-top: 0; /* เอา margin บนออก */
+            margin-bottom: 20px; 
+            font-size: 22px; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            gap: 10px; 
+        }
+        
+        label { display: block; margin-top: 15px; text-align: left; font-weight: 500; color: #2C3E50; font-size: 14px; }
+        
+        input, select { 
+            width: 100%; padding: 12px; margin-top: 6px; 
+            border: 2px solid #B2E2E0; border-radius: 12px; 
+            box-sizing: border-box; font-size: 15px;
+            background: #ffffff; transition: all 0.3s ease;
+            color: #2C3E50; outline: none; cursor: pointer;
+        }
+
+        input:focus, select:focus { border-color: #FFB320; box-shadow: 0 0 8px rgba(255, 179, 32, 0.2); }
+
+        .summary-box {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: rgba(255, 179, 32, 0.1);
+            border: 2px dashed #FFB320;
+            border-radius: 16px;
+        }
+        .summary-text { font-size: 14px; color: #2C3E50; font-weight: bold; }
+        .total-amount { font-size: 22px; color: #e6a11c; font-weight: bold; margin-top: 5px; }
+
+        button { 
+            width: 100%; padding: 16px; background-color: #FFB320; 
+            color: white; border: none; border-radius: 16px; 
+            margin-top: 25px; font-size: 18px; font-weight: bold;
+            cursor: pointer; box-shadow: 0 6px 20px rgba(255, 179, 32, 0.3);
+            transition: transform 0.2s, background-color 0.2s;
+        }
+
+        button:active { transform: scale(0.96); background-color: #e6a11c; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <img src="นักออมอวกาศ_tran.png" alt="My Savings Space Logo" class="app-logo">
+
+        <h2 id="ui-title">My Savings Space</h2>
+        
+        <label id="lbl-goal">เป้าหมายของคุณ (Goal Name):</label>
+        <input type="text" id="goalName" placeholder="เช่น ท่องอวกาศ / ไปดวงจันทร์">
+        
+        <label id="lbl-plan">เลือกแผนการออม (Plan):</label>
+        <select id="savePlan">
+            <option value="Saving-365-Days" selected>Saving-365-Days</option>
+        </select>
+
+        <label id="lbl-style">วิธีการออม (Saving Style):</label>
+        <select id="saveStyle" onchange="calculateTotal()">
+            <option value="step" selected>ออมตามลำดับวันที่ (Daily Step)</option>
+            <option value="fixed">ออมเท่ากันทุกวัน (Fixed Amount Daily)</option>
+        </select>
+
+        <div id="fixed-amount-area" style="display: none;">
+            <label id="lbl-amount">จำนวนเงินที่ต้องการออมต่อวัน:</label>
+            <input type="number" id="dailyAmount" value="100" oninput="calculateTotal()">
+        </div>
+
+        <label id="lbl-currency">สกุลเงิน (Currency):</label>
+        <select id="currency" onchange="calculateTotal()">
+            <option value="THB">THB (฿) - Thailand</option>
+            <option value="USD">USD ($) - United States</option>
+            <option value="EUR">EUR (€) - European Union</option>
+            <option value="JPY">JPY (¥) - Japan</option>
+            <option value="GBP">GBP (£) - United Kingdom</option>
+            <option value="KRW">KRW (₩) - South Korea</option>
+            <option value="CNY">CNY (¥) - China</option>
+            <option value="SGD">SGD ($) - Singapore</option>
+            <option value="AUD">AUD ($) - Australia</option>
+        </select>
+        
+        <label id="lbl-lang">เลือกภาษา (Language):</label>
+        <select id="lang" onchange="changeLanguage()">
+            <option value="th" selected>ภาษาไทย (Thai)</option>
+            <option value="en">English</option>
+            <option value="zh">中文 (Chinese)</option>
+            <option value="ja">日本語 (Japanese)</option>
+            <option value="ko">한국어 (Korean)</option>
+        </select>
+
+        <div class="summary-box">
+            <div id="lbl-summary" class="summary-text">ยอดรวมแผนการออมทั้งหมด:</div>
+            <div class="total-amount"><span id="totalDisplay">66,795</span> <span id="currencyDisplay">THB</span></div>
+        </div>
+        
+        <button id="btn-confirm" onclick="sendData()">ตกลง (Confirm)</button>
+    </div>
+
+    <script>
+        const translations = {
+            th: { title: "My Savings Space", goal: "เป้าหมายของคุณ (Goal Name):", placeholder: "เช่น ท่องอวกาศ / ไปดวงจันทร์", plan: "เลือกแผนการออม (Plan):", style: "วิธีการออม (Saving Style):", styleStep: "ออมตามลำดับวันที่ (Daily Step)", styleFixed: "ออมเท่ากันทุกวัน (Fixed Amount Daily)", amount: "จำนวนเงินที่ต้องการออมต่อวัน:", currency: "สกุลเงิน (Currency):", lang: "เลือกภาษา (Language):", summary: "ยอดรวมแผนการออมทั้งหมด:", confirm: "ตกลง (Confirm)" },
+            en: { title: "My Savings Space", goal: "Your Goal Name:", placeholder: "e.g. Space Trip / Moon", plan: "Select Savings Plan:", style: "Saving Style:", styleStep: "Daily Step (1-365)", styleFixed: "Fixed Amount Daily", amount: "Daily Savings Amount:", currency: "Currency:", lang: "Language:", summary: "Total Plan Savings:", confirm: "Confirm" },
+            zh: { title: "My Savings Space", goal: "您的目标 (Goal Name):", placeholder: "例如：太空旅行 / 月球", plan: "选择储蓄计划 (Plan):", style: "储蓄方式 (Saving Style):", styleStep: "每日递增 (Daily Step)", styleFixed: "每日固定金额 (Fixed Amount Daily)", amount: "每日储蓄金额:", currency: "货币 (Currency):", lang: "选择语言 (Language):", summary: "总储蓄目标:", confirm: "确认 (Confirm)" },
+            ja: { title: "My Savings Space", goal: "あなたの目標 (Goal Name):", placeholder: "例：宇宙旅行 / 月", plan: "貯金プランを選択 (Plan):", style: "貯金スタイル (Saving Style):", styleStep: "日別ステップ (Daily Step)", styleFixed: "毎日固定額 (Fixed Amount Daily)", amount: "1日の貯金額:", currency: "通貨 (Currency):", lang: "言語を選択 (Language):", summary: "合計貯金目標:", confirm: "確認 (Confirm)" },
+            ko: { title: "My Savings Space", goal: "당신의 목표 (Goal Name):", placeholder: "예: 우주 여행 / 달", plan: "저축 계획 선택 (Plan):", style: "저축 스타일 (Saving Style):", styleStep: "매일 증액 (Daily Step)", styleFixed: "매일 고정 금액 (Fixed Amount Daily)", amount: "일일 저축 금액:", currency: "통화 (Currency):", lang: "언어 선택 (Language):", summary: "총 저축 목표:", confirm: "확인 (Confirm)" }
+        };
+
+        function calculateTotal() {
+            const style = document.getElementById('saveStyle').value;
+            const currency = document.getElementById('currency').value;
+            let total = 0;
+            if (style === 'step') {
+                document.getElementById('fixed-amount-area').style.display = 'none';
+                total = (365 * (365 + 1)) / 2;
+            } else {
+                document.getElementById('fixed-amount-area').style.display = 'block';
+                const amount = parseFloat(document.getElementById('dailyAmount').value) || 0;
+                total = amount * 365;
+            }
+            document.getElementById('totalDisplay').innerText = total.toLocaleString();
+            document.getElementById('currencyDisplay').innerText = currency;
+        }
+
+        function changeLanguage() {
+            const l = document.getElementById('lang').value;
+            document.getElementById('ui-title').innerText = translations[l].title;
+            document.getElementById('lbl-goal').innerText = translations[l].goal;
+            document.getElementById('goalName').placeholder = translations[l].placeholder;
+            document.getElementById('lbl-plan').innerText = translations[l].plan;
+            document.getElementById('lbl-style').innerText = translations[l].style;
+            document.getElementById('lbl-amount').innerText = translations[l].amount;
+            document.getElementById('lbl-currency').innerText = translations[l].currency;
+            document.getElementById('lbl-lang').innerText = translations[l].lang;
+            document.getElementById('lbl-summary').innerText = translations[l].summary;
+            document.getElementById('btn-confirm').innerText = translations[l].confirm;
+            const styleSelect = document.getElementById('saveStyle');
+            styleSelect.options[0].text = translations[l].styleStep;
+            styleSelect.options[1].text = translations[l].styleFixed;
+        }
+
+        liff.init({ liffId: "YOUR_LIFF_ID" }).then(() => {
+            if (!liff.isLoggedIn()) { liff.login(); }
+        });
+
+        function sendData() {
+            const data = {
+                userId: liff.getContext().userId,
+                goalName: document.getElementById('goalName').value,
+                plan: document.getElementById('savePlan').value,
+                saveStyle: document.getElementById('saveStyle').value,
+                dailyAmount: document.getElementById('saveStyle').value === 'fixed' ? document.getElementById('dailyAmount').value : 'step',
+                currency: document.getElementById('currency').value,
+                language: document.getElementById('lang').value,
+                totalTarget: document.getElementById('totalDisplay').innerText.replace(/,/g, '')
+            };
+            fetch('/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            }).then(() => { liff.closeWindow(); });
+        }
+        calculateTotal();
+    </script>
+</body>
+</html>
