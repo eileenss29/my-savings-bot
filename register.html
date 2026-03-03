@@ -8,13 +8,11 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;500&display=swap');
 
+        /* ✅ ปรับ Body ให้รองรับการ Scroll ใน LINE 100% */
         body { 
             font-family: 'Kanit', sans-serif; 
             margin: 0;
-            padding: 20px 10px; /* ลด padding ข้างเพื่อเพิ่มพื้นที่บนมือถือ */
-            display: flex;
-            justify-content: center;
-            align-items: flex-start; /* เปลี่ยนเพื่อให้เลื่อนจากบนลงล่างได้ดีขึ้น */
+            padding: 20px 0; /* เพิ่มพื้นที่บน-ล่างให้เลื่อนได้สุด */
             min-height: 100vh;
             background-color: #E0F2F1; 
             background-image: 
@@ -23,27 +21,28 @@
                 url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
             background-blend-mode: soft-light;
             background-size: cover;
-            background-attachment: fixed; /* ให้พื้นหลังนิ่งขณะเลื่อนหน้าจอ */
-            overflow-y: auto; /* ✅ เปิดให้เลื่อนหน้าจอได้ */
-            -webkit-overflow-scrolling: touch; /* ให้การรูดหน้าจอบน iOS ลื่นไหล */
+            background-attachment: fixed;
+            overflow-y: auto !important; /* ✅ บังคับเปิดแถบเลื่อนแนวตั้ง */
+            -webkit-overflow-scrolling: touch;
         }
 
+        /* ✅ จัดกลางกล่องด้วย margin auto แทน flex center */
         .container { 
             background: rgba(255, 255, 255, 0.95); 
             padding: 25px 20px; 
             border-radius: 28px; 
             box-shadow: 0 10px 30px rgba(151, 210, 208, 0.3); 
-            width: 100%;
+            width: 90%;
             max-width: 360px;
             text-align: center;
+            margin: 10px auto 40px auto; /* ✅ margin บน-ล่าง เพิ่มพื้นที่ให้เลื่อนพ้นขอบ */
             position: relative; 
             z-index: 1;
             backdrop-filter: blur(10px);
-            margin-bottom: 40px; /* เพิ่มระยะห่างด้านล่างไม่ให้ปุ่ม Confirm ติดขอบจอเกินไป */
         }
 
         .app-logo {
-            width: 140px; /* ปรับขนาดเล็กลงนิดนึงเพื่อให้ประหยัดพื้นที่แนวตั้ง */
+            width: 130px; 
             height: auto;
             margin-bottom: 5px;
             filter: drop-shadow(0 5px 10px rgba(0,0,0,0.1));
@@ -51,9 +50,8 @@
 
         h2 { 
             color: #2C3E50; 
-            margin-top: 0;
-            margin-bottom: 15px; 
-            font-size: 20px; 
+            margin: 0 0 15px 0;
+            font-size: 19px; 
             font-weight: 500;
         }
         
@@ -65,6 +63,7 @@
             box-sizing: border-box; font-size: 15px;
             background: #ffffff; transition: all 0.3s ease;
             color: #2C3E50; outline: none;
+            -webkit-appearance: none; /* แก้ดีไซน์ select บน iOS */
         }
 
         input:focus, select:focus { border-color: #FFB320; box-shadow: 0 0 8px rgba(255, 179, 32, 0.2); }
@@ -84,7 +83,7 @@
             color: white; border: none; border-radius: 16px; 
             margin-top: 20px; font-size: 18px; font-weight: bold;
             cursor: pointer; box-shadow: 0 6px 15px rgba(255, 179, 32, 0.3);
-            transition: transform 0.2s, background-color 0.2s;
+            transition: transform 0.2s;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -112,7 +111,7 @@
 
         <div id="fixed-amount-area" style="display: none;">
             <label id="lbl-amount">จำนวนเงินที่ต้องการออมต่อวัน:</label>
-            <input type="number" id="dailyAmount" value="100" oninput="calculateTotal()" pattern="\[0-9]*" inputmode="decimal">
+            <input type="number" id="dailyAmount" value="100" oninput="calculateTotal()" pattern="[0-9]*" inputmode="decimal">
         </div>
 
         <label id="lbl-currency">สกุลเงิน (Currency):</label>
@@ -146,6 +145,7 @@
     </div>
 
     <script>
+        // ... (ส่วน translations และ calculateTotal เหมือนเดิม) ...
         const translations = {
             th: { title: "My Savings Space", goal: "เป้าหมายของคุณ (Goal Name):", placeholder: "เช่น ท่องอวกาศ / ไปดวงจันทร์", plan: "เลือกแผนการออม (Plan):", style: "วิธีการออม (Saving Style):", styleStep: "ออมตามลำดับวันที่ (Daily Step)", styleFixed: "ออมเท่ากันทุกวัน (Fixed Amount Daily)", amount: "จำนวนเงินที่ต้องการออมต่อวัน:", currency: "สกุลเงิน (Currency):", lang: "เลือกภาษา (Language):", summary: "ยอดรวมแผนการออมทั้งหมด:", confirm: "ตกลง (Confirm)" },
             en: { title: "My Savings Space", goal: "Your Goal Name:", placeholder: "e.g. Space Trip / Moon", plan: "Select Savings Plan:", style: "Saving Style:", styleStep: "Daily Step (1-365)", styleFixed: "Fixed Amount Daily", amount: "Daily Savings Amount:", currency: "Currency:", lang: "Language:", summary: "Total Plan Savings:", confirm: "Confirm" },
@@ -187,6 +187,7 @@
             styleSelect.options[1].text = translations[l].styleFixed;
         }
 
+        // ✅ LIFF Init
         liff.init({ liffId: "2009295672-lvQVM5Ey" }).then(() => {
             if (!liff.isLoggedIn()) { liff.login(); }
         }).catch((err) => { console.error('LIFF Init failed', err); });
@@ -209,7 +210,6 @@
                 totalTarget: document.getElementById('totalDisplay').innerText.replace(/,/g, '')
             };
 
-            // เปลี่ยนจาก '/api/register' เป็น Endpoint จริงของคุณบน Render
             fetch('https://my-savings-space.onrender.com/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
