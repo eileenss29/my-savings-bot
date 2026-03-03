@@ -8,11 +8,10 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Kanit:wght@300;500&display=swap');
 
-        /* ✅ ปรับ Body ให้รองรับการ Scroll ใน LINE 100% */
         body { 
             font-family: 'Kanit', sans-serif; 
             margin: 0;
-            padding: 20px 0; /* เพิ่มพื้นที่บน-ล่างให้เลื่อนได้สุด */
+            padding: 20px 0; 
             min-height: 100vh;
             background-color: #E0F2F1; 
             background-image: 
@@ -22,11 +21,10 @@
             background-blend-mode: soft-light;
             background-size: cover;
             background-attachment: fixed;
-            overflow-y: auto !important; /* ✅ บังคับเปิดแถบเลื่อนแนวตั้ง */
+            overflow-y: auto !important; 
             -webkit-overflow-scrolling: touch;
         }
 
-        /* ✅ จัดกลางกล่องด้วย margin auto แทน flex center */
         .container { 
             background: rgba(255, 255, 255, 0.95); 
             padding: 25px 20px; 
@@ -35,7 +33,7 @@
             width: 90%;
             max-width: 360px;
             text-align: center;
-            margin: 10px auto 40px auto; /* ✅ margin บน-ล่าง เพิ่มพื้นที่ให้เลื่อนพ้นขอบ */
+            margin: 10px auto 40px auto; 
             position: relative; 
             z-index: 1;
             backdrop-filter: blur(10px);
@@ -63,7 +61,7 @@
             box-sizing: border-box; font-size: 15px;
             background: #ffffff; transition: all 0.3s ease;
             color: #2C3E50; outline: none;
-            -webkit-appearance: none; /* แก้ดีไซน์ select บน iOS */
+            -webkit-appearance: none; 
         }
 
         input:focus, select:focus { border-color: #FFB320; box-shadow: 0 0 8px rgba(255, 179, 32, 0.2); }
@@ -145,7 +143,6 @@
     </div>
 
     <script>
-        // ... (ส่วน translations และ calculateTotal เหมือนเดิม) ...
         const translations = {
             th: { title: "My Savings Space", goal: "เป้าหมายของคุณ (Goal Name):", placeholder: "เช่น ท่องอวกาศ / ไปดวงจันทร์", plan: "เลือกแผนการออม (Plan):", style: "วิธีการออม (Saving Style):", styleStep: "ออมตามลำดับวันที่ (Daily Step)", styleFixed: "ออมเท่ากันทุกวัน (Fixed Amount Daily)", amount: "จำนวนเงินที่ต้องการออมต่อวัน:", currency: "สกุลเงิน (Currency):", lang: "เลือกภาษา (Language):", summary: "ยอดรวมแผนการออมทั้งหมด:", confirm: "ตกลง (Confirm)" },
             en: { title: "My Savings Space", goal: "Your Goal Name:", placeholder: "e.g. Space Trip / Moon", plan: "Select Savings Plan:", style: "Saving Style:", styleStep: "Daily Step (1-365)", styleFixed: "Fixed Amount Daily", amount: "Daily Savings Amount:", currency: "Currency:", lang: "Language:", summary: "Total Plan Savings:", confirm: "Confirm" },
@@ -187,10 +184,14 @@
             styleSelect.options[1].text = translations[l].styleFixed;
         }
 
-        // ✅ LIFF Init
+        // ✅ แก้ไข LIFF Init ให้สมบูรณ์
         liff.init({ liffId: "2009295672-lvQVM5Ey" }).then(() => {
-            if (!liff.isLoggedIn()) { liff.login(); }
-        }).catch((err) => { console.error('LIFF Init failed', err); });
+            if (!liff.isLoggedIn()) { 
+                liff.login(); 
+            }
+        }).catch((err) => { 
+            console.error('LIFF Init failed', err); 
+        });
 
         function sendData() {
             const goalName = document.getElementById('goalName').value;
@@ -198,6 +199,11 @@
                 alert("กรุณากรอกชื่อเป้าหมายด้วยนะคะ 🚀");
                 return;
             }
+
+            // แสดงสถานะการส่งข้อมูลให้ผู้ใช้ทราบ
+            const btn = document.getElementById('btn-confirm');
+            btn.disabled = true;
+            btn.innerText = "กำลังบันทึก... (Saving...)";
 
             const data = {
                 userId: liff.getContext().userId,
@@ -210,21 +216,26 @@
                 totalTarget: document.getElementById('totalDisplay').innerText.replace(/,/g, '')
             };
 
+            // ✅ ตรวจสอบ URL ของ Render ให้ถูกต้อง
             fetch('https://my-savings-space.onrender.com/api/register', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json'
+                },
                 body: JSON.stringify(data)
             })
             .then(response => {
                 if (response.ok) {
                     liff.closeWindow();
                 } else {
-                    alert("เกิดข้อผิดพลาดในการบันทึกข้อมูล ลองใหม่อีกครั้งนะคะ");
+                    throw new Error('Server returned ' + response.status);
                 }
             })
             .catch(err => {
                 console.error('Error:', err);
-                alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ครับ");
+                alert("ไม่สามารถเชื่อมต่อกับเซิร์ฟเวอร์ได้ครับ กรุณาลองใหม่ภายหลัง");
+                btn.disabled = false;
+                btn.innerText = "ตกลง (Confirm)";
             });
         }
         calculateTotal();
